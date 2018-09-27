@@ -54,8 +54,14 @@ func (ghi *Importer) GetDescription() string {
 func (ghi *Importer) GetCommits() []data.Commit {
 	ghi.initClient()
 	commits := make([]data.Commit, len(ghi.commits))
-	for i, com := range ghi.commits {
-		commits[i] = data.Commit{Sha: *com.SHA, ShowUrl: *com.HTMLURL}
+	for i, commit := range ghi.commits {
+		com := commit.Commit
+		parentSha := make([]string, len(commit.Parents))
+		for i, par := range commit.Parents {
+			parentSha[i] = *par.SHA
+		}
+		commits[i] = data.Commit{Sha: *commit.SHA, ShowUrl: *commit.HTMLURL, ParentSha: &parentSha, Time: com.Author.Date,
+			Message: com.Message}
 	}
 	return commits
 }

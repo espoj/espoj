@@ -21,23 +21,23 @@ func getProjectNamespace(url string) string {
 	return url[lastSlash+1:]
 }
 func (gl *Importer) readCommits() {
-	const totalPerPage = 2000
+	const perPage = 100
 	trueVal := true
-	lco := &gitlab.ListCommitsOptions{All: &trueVal, ListOptions: gitlab.ListOptions{PerPage: totalPerPage}}
-	commits, resp, _ := gl.client.Commits.ListCommits(gl.projectId, lco)
-	totalPages := resp.TotalItems/totalPerPage + 1
-	for curPage := 2; curPage <= totalPages; curPage++ {
-		lco.Page = curPage
-		pCommit, _, _ := gl.client.Commits.ListCommits(gl.projectId, lco)
-		commits = append(commits, pCommit...)
+	commits, resp, _ := gl.client.Commits.ListCommits(gl.projectId, &gitlab.ListCommitsOptions{All: &trueVal, ListOptions: gitlab.ListOptions{PerPage: perPage}})
+	var pCommits []*gitlab.Commit
+	for resp.NextPage != 0 {
+		pCommits, resp, _ = gl.client.Commits.ListCommits(gl.projectId, &gitlab.ListCommitsOptions{All: &trueVal, ListOptions: gitlab.ListOptions{PerPage: resp.ItemsPerPage, Page: resp.NextPage}})
+		commits = append(commits, pCommits...)
 	}
 	gl.commits = commits
 }
 func (gl *Importer) initClient() {
-	gl.client = gitlab.NewClient(nil, gl.Token)
-	gl.project, _, _ = gl.client.Projects.GetProject(getProjectNamespace(gl.Url))
-	gl.projectId = gl.project.ID
-	gl.readCommits()
+	if gl.client == nil {
+		gl.client = gitlab.NewClient(nil, gl.Token)
+		gl.project, _, _ = gl.client.Projects.GetProject(getProjectNamespace(gl.Url))
+		gl.projectId = gl.project.ID
+		gl.readCommits()
+	}
 }
 func (gl *Importer) GetUrl() string {
 	gl.initClient()
@@ -55,8 +55,9 @@ func (gl *Importer) GetCommits() []data.Commit {
 	gl.initClient()
 	baseUrl := gl.GetUrl() + "/commit/"
 	commits := make([]data.Commit, 0, len(gl.commits))
-	for _, commit := range gl.commits {
-		commits = append(commits, data.Commit{Sha: commit.ID, ShowUrl: baseUrl + commit.ID})
+	for _, com := range gl.commits {
+		commits = append(commits, data.Commit{Sha: com.ID, ShowUrl: baseUrl + com.ID, ParentSha: &com.ParentIDs, Time: com.AuthoredDate,
+			Message: &com.Message})
 	}
 	return commits
 }

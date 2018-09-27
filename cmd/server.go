@@ -28,16 +28,18 @@ func main() {
 	data1 := data.NewData()
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		url := strings.TrimPrefix(request.URL.Path, "/")
-		repo := data1.GetRepository(url[strings.LastIndex(url, "/")+1:])
+		repoName := url[strings.LastIndex(url, "/")+1:]
+		repo := data1.GetRepository(repoName)
 		if repo == nil {
 			repo = createRepo(url)
-			data1.AddRepository(repo)
+			data1.AddRepository(repoName, repo)
 		}
 		writer.Write([]byte("<html><head></head><body>"))
 		if repo != nil {
+			repo.SortCommits()
 			writer.Write([]byte("<h1><a href=" + repo.Url + ">" + repo.Name + "</a></h1><h2>commits</h2>"))
 			for _, commit := range repo.Commits {
-				writer.Write([]byte("<h5><a href=" + commit.ShowUrl + ">" + commit.Sha + "</a></h5>"))
+				writer.Write([]byte("<h5><a href=" + commit.ShowUrl + ">" + commit.Sha + "</a></h5><h6>" + *commit.Message + "</h6>"))
 			}
 		}
 		writer.Write([]byte("</body></html>"))
