@@ -32,7 +32,10 @@ func main() {
 		repo := data1.GetRepository(repoName)
 		if repo == nil {
 			repo = createRepo(url)
-			data1.AddRepository(repoName, repo)
+			if repo != nil {
+				data1.AddRepository(repoName, repo)
+				repo.Save()
+			}
 		}
 		writer.Write([]byte("<html><head></head><body>"))
 		if repo != nil {

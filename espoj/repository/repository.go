@@ -12,5 +12,5 @@ type Importer interface {
 }
 
 func CreateRepository(repositoryImport Importer) data.Repository {
-	return data.Repository{repositoryImport.GetUrl(), repositoryImport.GetName(), repositoryImport.GetDescription(), repositoryImport.GetCommits()}
+	return data.Repository{repositoryImport.GetUrl(), repositoryImport.GetName(), repositoryImport.GetDescription(),repositoryImport.GetCloneUrl() ,repositoryImport.GetCommits()}
 }
